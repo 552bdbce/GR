@@ -12,6 +12,46 @@ import numpy as np
 # Import OpenCV for easy image rendering
 import cv2
 
+class mouseParam:
+    def __init__(self, input_img_name):
+        #マウス入力用のパラメータ
+        self.mouseEvent = {"x":None, "y":None, "event":None, "flags":None}
+        #マウス入力の設定
+        cv2.setMouseCallback(input_img_name, self.__CallBackFunc, None)
+
+    #コールバック関数
+    def __CallBackFunc(self, eventType, x, y, flags, userdata):
+
+        self.mouseEvent["x"] = x
+        self.mouseEvent["y"] = y
+        self.mouseEvent["event"] = eventType
+        self.mouseEvent["flags"] = flags
+
+        #マウス入力用のパラメータを返すための関数
+    def getData(self):
+        return self.mouseEvent
+
+    #マウスイベントを返す関数
+    def getEvent(self):
+        return self.mouseEvent["event"]
+
+        #マウスフラグを返す関数
+    def getFlags(self):
+        return self.mouseEvent["flags"]
+
+        #xの座標を返す関数
+    def getX(self):
+        return self.mouseEvent["x"]
+
+        #yの座標を返す関数
+    def getY(self):
+        return self.mouseEvent["y"]
+
+        #xとyの座標を返す関数
+    def getPos(self):
+        return (self.mouseEvent["x"], self.mouseEvent["y"])
+
+
 def filter2d(src, kernel):
     # カーネルサイズ
     m, n = kernel.shape
@@ -58,6 +98,8 @@ clipping_distance = clipping_distance_in_meters / depth_scale
 align_to = rs.stream.color
 align = rs.align(align_to)
 
+target_width = 100
+target_height = 100
 # Streaming loop
 try:
     while True:
@@ -85,6 +127,12 @@ try:
         depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
         bg_removed = np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), grey_color, color_image)
 
+        # depth1 = frames.get_distance(300, 150)
+        meters = frames.get_depth_frame()
+        meters2 = meters.get_distance(target_width, target_height)
+        # print("depth", depth_image_3d[300][150])
+        print("depth", meters2)
+
         # Render images
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
@@ -92,11 +140,29 @@ try:
         kernel = np.array([[0, 0, 0],
                            [-1, 0, 1],
                            [0, 0, 0]])
-        dst1 = filter2d(gray, kernel)
+        dst1 = cv2.Canny(gray, 75, 150)
+        height = dst1.shape[0]
+        width = dst1.shape[1]
+        # print("", width, height)
+
 
         images = np.hstack((bg_removed, depth_colormap))
         cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('Align Example', images)
+        cv2.circle(dst1, (target_width, target_height), 10, (255, 0, 0), -1)
+        cv2.imshow('Align Example2', dst1)
+
+        mouseData = mouseParam('Align Example')
+
+        cv2.waitKey(20)
+        #左クリックがあったら表示
+        if mouseData.getEvent() == cv2.EVENT_LBUTTONDOWN:
+            print(mouseData.getPos())
+            target_width = mouseData.getX()
+            target_height = mouseData.getY()
+        #右クリックがあったら終了
+        elif mouseData.getEvent() == cv2.EVENT_RBUTTONDOWN:
+            break;
 
         key = cv2.waitKey(1)
         # Press esc or 'q' to close the image window
