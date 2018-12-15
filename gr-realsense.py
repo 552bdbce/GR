@@ -12,7 +12,12 @@ import numpy as np
 # Import OpenCV for easy image rendering
 import cv2
 
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+from matplotlib import pyplot
+
+import plotly.plotly as py
+import plotly.graph_objs as go
 
 class mouseParam:
     def __init__(self, input_img_name):
@@ -68,7 +73,7 @@ profile = pipeline.start(config)
 # Getting the depth sensor's depth scale (see rs-align example for explanation)
 depth_sensor = profile.get_device().first_depth_sensor()
 depth_scale = depth_sensor.get_depth_scale()
-print("Depth Scale is: " , depth_scale)
+print("Depth Scale is: ", depth_scale)
 
 # We will be removing the background of objects more than
 #  clipping_distance_in_meters meters away
@@ -87,6 +92,12 @@ target_height = 100
 
 # Streaming loop
 try:
+    x = np.arange(0, 640)
+    y = np.arange(0, 360)
+    X, Y = np.meshgrid(x, y)
+    fig = plt.figure()
+    test20 = np.zeros((400, 640))  # 上から見たとき、深度値がどれくらい重なっているかを記録 初期値0　400mmまで記録
+
     while True:
         # Get frameset of color and depth
         frames = pipeline.wait_for_frames()
@@ -126,7 +137,18 @@ try:
         depth = frames.get_depth_frame()
         depth_data = depth.as_frame().get_data()
         np_image = np.asanyarray(depth_data)
-        # np.savetxt('out.csv', np_image, delimiter=',') # error
+        print(test20)
+
+        for i in range(0, 360):
+            for j in range(0, 640):
+                if np_image[i][j] <= 400:  # 400mmまでに茎がないかどうか
+                    test20[np_image[i][j]][j] += 1
+
+        np.savetxt('out2.csv', test20, delimiter=',')
+
+        # pyplot.plot(np_image)
+        # pyplot.show()
+        # np.savetxt('out.csv', np_image, delimiter=',')
 
         # Render images
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
@@ -144,11 +166,18 @@ try:
         cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
         cv2.circle(images, (target_width, target_height), 10, (255, 0, 0), 5)
         cv2.imshow('Align Example', images)  # RGB+depth(Colored)
-        cv2.imshow('Align Example2', np_image)  # ndarray data
+        # cv2.imshow('Align Example2', np_image)  # ndarray data
         cv2.circle(dst1, (target_width, target_height), 10, (255, 0, 0), -1)
-        cv2.imshow('Align Example3', dst1)  # cv2.canny
+        # cv2.imshow('Align Example3', dst1)  # cv2.canny
 
-        print(type(np_image))
+        # print(type(np_image))
+
+        # 配列を3Dグラフで表示
+        #ax = Axes3D(fig)
+        # ax.plot_wireframe(X, Y, np_image)
+        # plt.tight_layout()
+        # plt.pause(1.5)
+        # print("plot")
 
         mouseData = mouseParam('Align Example')
 
@@ -158,6 +187,7 @@ try:
             print(mouseData.getPos())
             target_width = mouseData.getX()
             target_height = mouseData.getY()
+            # np.savetxt('out.csv', np_image, delimiter=',') # save CSV
         #右クリックがあったら終了
         elif mouseData.getEvent() == cv2.EVENT_RBUTTONDOWN:
             break;
