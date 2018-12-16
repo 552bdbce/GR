@@ -16,8 +16,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import pyplot
 
-import plotly.plotly as py
-import plotly.graph_objs as go
+# import plotly.plotly as py
+# import plotly.graph_objs as go
 
 class mouseParam:
     def __init__(self, input_img_name):
@@ -96,9 +96,11 @@ try:
     y = np.arange(0, 360)
     X, Y = np.meshgrid(x, y)
     fig = plt.figure()
-    test20 = np.zeros((400, 640))  # 上から見たとき、深度値がどれくらい重なっているかを記録 初期値0　400mmまで記録
+
 
     while True:
+        test20 = np.zeros((401, 640))  # 上から見たとき、深度値がどれくらい重なっているかを記録 初期値0　400mmまで記録
+
         # Get frameset of color and depth
         frames = pipeline.wait_for_frames()
         # frames.get_depth_frame() is a 640x360 depth image
@@ -137,13 +139,18 @@ try:
         depth = frames.get_depth_frame()
         depth_data = depth.as_frame().get_data()
         np_image = np.asanyarray(depth_data)
-        print(test20)
+        # print(test20)
 
-        for i in range(0, 360):
-            for j in range(0, 640):
-                if np_image[i][j] <= 400:  # 400mmまでに茎がないかどうか
+        for i in range(10, 350):
+            for j in range(10, 630):
+                if np_image[i][j] <= 400 and np_image[i][j] >= 100:  # 400mmまでに茎がないかどうか
                     test20[np_image[i][j]][j] += 1
 
+        res1 = np.argmax(test20)
+        res4 = np.amax(test20)
+        res2, res3 = divmod(res1, 640)
+        print(res1, res2, res3, res4)
+        # print(test20)
         np.savetxt('out2.csv', test20, delimiter=',')
 
         # pyplot.plot(np_image)
