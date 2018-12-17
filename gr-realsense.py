@@ -92,13 +92,23 @@ target_height = 100
 
 # Streaming loop
 try:
-    x = np.arange(0, 640)
-    y = np.arange(0, 360)
-    X, Y = np.meshgrid(x, y)
+    x640 = np.arange(0, 640)
+    y360 = np.arange(0, 360)
+    X640, Y360 = np.meshgrid(x640, y360)
     fig = plt.figure()
 
+    # x401 = np.arange(0, 401)
+    y401 = np.arange(0, 401)
+    X640, Y401 = np.meshgrid(x640, y401)
+
+    loop_i = 0
 
     while True:
+        loop_i += 1
+        if loop_i%10 == 0:
+            np.savetxt('out2.csv', test20, delimiter=',')
+            cv2.imwrite('ex1.jpg', images)
+
         test20 = np.zeros((401, 640))  # 上から見たとき、深度値がどれくらい重なっているかを記録 初期値0　400mmまで記録
 
         # Get frameset of color and depth
@@ -111,7 +121,6 @@ try:
         # Get aligned frames
         aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
         color_frame = aligned_frames.get_color_frame()
-
 
         # Validate that both frames are valid
         if not aligned_depth_frame or not color_frame:
@@ -127,7 +136,6 @@ try:
 
         # print(depth_image_3d)
         # print(type(depth_image_3d)) # <class 'numpy.ndarray'>
-
 
         # depth1 = frames.get_distance(300, 150)
         meters = frames.get_depth_frame()
@@ -151,11 +159,11 @@ try:
         res2, res3 = divmod(res1, 640)
         print(res1, res2, res3, res4)
         # print(test20)
-        np.savetxt('out2.csv', test20, delimiter=',')
+        # np.savetxt('out2.csv', test20, delimiter=',')
 
-        # pyplot.plot(np_image)
-        # pyplot.show()
-        # np.savetxt('out.csv', np_image, delimiter=',')
+        #pyplot.plot(test20)
+        #pyplot.show()
+        #np.savetxt('out.csv', np_image, delimiter=',')
 
         # Render images
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
@@ -179,12 +187,12 @@ try:
 
         # print(type(np_image))
 
-        # 配列を3Dグラフで表示
-        #ax = Axes3D(fig)
-        # ax.plot_wireframe(X, Y, np_image)
+        '''# 配列を3Dグラフで表示
+        ax = Axes3D(fig)
+        ax.plot_wireframe(X640, Y401, test20)
         # plt.tight_layout()
-        # plt.pause(1.5)
-        # print("plot")
+        plt.pause(1.5)
+        print("plot")'''
 
         mouseData = mouseParam('Align Example')
 
