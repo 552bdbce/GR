@@ -187,12 +187,12 @@ try:
 
         # print(type(np_image))
 
-        '''# 配列を3Dグラフで表示
+        # 配列を3Dグラフで表示
         ax = Axes3D(fig)
         ax.plot_wireframe(X640, Y401, test20)
         # plt.tight_layout()
         plt.pause(1.5)
-        print("plot")'''
+        print("plot")
 
         mouseData = mouseParam('Align Example')
 
