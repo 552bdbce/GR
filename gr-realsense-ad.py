@@ -177,13 +177,13 @@ try:
             z_rep[i_rep] = rep2
             print(i_rep)
         print(x_rep, y_rep, z_rep)
-
+        '''
         ax = Axes3D(fig)
         ax.plot(x_rep, y_rep, z_rep, "o-", color="#00aa00", ms=4, mew=0.5)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
-        plt.pause(1)
+        plt.pause(1)'''
 
         # print(test20)
         # np.savetxt('out2.csv', test20, delimiter=',')

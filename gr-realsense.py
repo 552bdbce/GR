@@ -11,6 +11,7 @@ import pyrealsense2 as rs
 import numpy as np
 # Import OpenCV for easy image rendering
 import cv2
+import time
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -104,9 +105,11 @@ try:
     loop_i = 0
 
     while True:
+        t1 = time.time()
         loop_i += 1
-        if loop_i%10 == 0:
+        if loop_i % 1000 == 0:
             np.savetxt('out2.csv', test20, delimiter=',')
+            np.savetxt('out.csv', np_image, delimiter=',')
             cv2.imwrite('ex1.jpg', images)
 
         test20 = np.zeros((401, 640))  # 上から見たとき、深度値がどれくらい重なっているかを記録 初期値0　400mmまで記録
@@ -150,20 +153,34 @@ try:
         # print(test20)
 
         for i in range(10, 350):
-            for j in range(10, 630):
+            for j in range(270, 370):
+            # for j in range(10, 630):
                 if np_image[i][j] <= 400 and np_image[i][j] >= 100:  # 400mmまでに茎がないかどうか
                     test20[np_image[i][j]][j] += 1
-
+        print(np_image[180][320])
         res1 = np.argmax(test20)
         res4 = np.amax(test20)
         res2, res3 = divmod(res1, 640)
         print(res1, res2, res3, res4)
         # print(test20)
-        # np.savetxt('out2.csv', test20, delimiter=',')
+        test40 = np.where(np_image[:, [res3]] == res2)
+        print(test40[0][:])
 
-        #pyplot.plot(test20)
-        #pyplot.show()
-        #np.savetxt('out.csv', np_image, delimiter=',')
+        # x_rep = [res3, res3]
+        # y_rep = [10, 350]
+        # z_rep = [res2, res2]
+        # ax = Axes3D(fig)
+        # ax.plot(x_rep, z_rep, y_rep, "o-", color="#00aa00", ms=4, mew=0.5)
+        plt.xlim(0, 640)
+        plt.ylim(0, 400)
+        plt.xlabel("x axis")
+        plt.ylabel("z axis")
+        plt.plot(res3, res2, marker='.', markersize=20)
+        plt.pause(0.5)
+        plt.clf()
+
+        # pyplot.plot(test20)
+        # pyplot.show()
 
         # Render images
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
@@ -187,12 +204,12 @@ try:
 
         # print(type(np_image))
 
-        # 配列を3Dグラフで表示
+        '''# 配列を3Dグラフで表示
         ax = Axes3D(fig)
         ax.plot_wireframe(X640, Y401, test20)
         # plt.tight_layout()
         plt.pause(1.5)
-        print("plot")
+        print("plot")'''
 
         mouseData = mouseParam('Align Example')
 
@@ -212,6 +229,9 @@ try:
         if key & 0xFF == ord('q') or key == 27:
             cv2.destroyAllWindows()
             break
+        t2 = time.time()
+        elapsed_time = t2-t1
+        print(f"経過時間：{elapsed_time}")
 finally:
 
     pipeline.stop()
