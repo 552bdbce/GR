@@ -107,9 +107,10 @@ try:
     while True:
         t1 = time.time()
         loop_i += 1
-        if loop_i % 1000 == 0:
+        if loop_i % 10 == 0:
             np.savetxt('out2.csv', test20, delimiter=',')
             np.savetxt('out.csv', np_image, delimiter=',')
+            np.savetxt('np_image.csv', np_image, delimiter=',')
             cv2.imwrite('ex1.jpg', images)
 
         test20 = np.zeros((401, 640))  # 上から見たとき、深度値がどれくらい重なっているかを記録 初期値0　400mmまで記録
@@ -152,19 +153,31 @@ try:
         np_image = np.asanyarray(depth_data)
         # print(test20)
 
-        for i in range(10, 350):
-            for j in range(270, 370):
-            # for j in range(10, 630):
-                if np_image[i][j] <= 400 and np_image[i][j] >= 100:  # 400mmまでに茎がないかどうか
-                    test20[np_image[i][j]][j] += 1
+        vertical_0 = 150
+        vertical_100 = 210
+        horizontal_0 = 270
+        horizontal_100 = 370
+        res_amax = 0
+
+        while res_amax <= 40:
+            for i in range(vertical_0, vertical_100):
+                for j in range(horizontal_0, horizontal_100):
+                # for j in range(10, 630):
+                    if np_image[i][j] <= 400 and np_image[i][j] >= 100:  # 400mmまでに茎がないかどうか
+                        test20[np_image[i][j]][j] += 1
+            vertical_0 -= 15
+            vertical_100 += 15
+            res_amax = np.amax(test20)
+            print("res_amax :", res_amax)
+        print("range ", vertical_0, vertical_100)
         print(np_image[180][320])
         res1 = np.argmax(test20)
         res4 = np.amax(test20)
         res2, res3 = divmod(res1, 640)
         print(res1, res2, res3, res4)
         # print(test20)
-        test40 = np.where(np_image[:, [res3]] == res2)
-        print(test40[0][:])
+        #test40 = np.where(np_image[:, [res3]] == res2)
+        #print(test40[0][:])
 
         # x_rep = [res3, res3]
         # y_rep = [10, 350]
@@ -189,18 +202,20 @@ try:
         kernel = np.array([[0, 0, 0],
                            [-1, 0, 1],
                            [0, 0, 0]])
-        dst1 = cv2.Canny(gray, 75, 150)
+        dst1 = cv2.Canny(color_image, 75, 150)
         height = dst1.shape[0]
         width = dst1.shape[1]
         # print("", width, height)
 
-        images = np.hstack((color_image, depth_colormap))
+        images = depth_colormap
+        # images = np.hstack((color_image, depth_colormap))
         cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
-        cv2.circle(images, (target_width, target_height), 10, (255, 0, 0), 5)
+        # cv2.circle(images, (target_width, target_height), 10, (255, 0, 0), 5)
+        cv2.line(images, (res3, 0), (res3, 360), (255, 0, 0), 5)
         cv2.imshow('Align Example', images)  # RGB+depth(Colored)
         # cv2.imshow('Align Example2', np_image)  # ndarray data
         cv2.circle(dst1, (target_width, target_height), 10, (255, 0, 0), -1)
-        # cv2.imshow('Align Example3', dst1)  # cv2.canny
+        cv2.imshow('Align Example3', dst1)  # cv2.canny
 
         # print(type(np_image))
 
