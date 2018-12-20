@@ -205,7 +205,7 @@ try:
         dst1 = cv2.Canny(color_image, 130, 180)
         hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
         center_param = hsv[100][100]
-        print(center_param)
+        print(center_param[2])
         lower_yellow = np.array([125, 18, 29])
         upper_yellow = np.array([125, 36, 29])
         img_mask = cv2.inRange(hsv, lower_yellow, upper_yellow)

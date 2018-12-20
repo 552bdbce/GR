@@ -65,7 +65,7 @@ pipeline = rs.pipeline()
 # Create a config and configure the pipeline to stream
 #  different resolutions of color and depth streams
 config = rs.config()
-config.enable_stream(rs.stream.depth, 640, 360, rs.format.z16, 30)
+config.enable_stream(rs.stream.depth, 640, 360, rs.format.z16, 30)  # ->360
 config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
 # Start streaming
@@ -107,9 +107,11 @@ try:
     while True:
         t1 = time.time()
         loop_i += 1
-        if loop_i%10 == 0:
-            np.savetxt('out2.csv', test20, delimiter=',')
+        if loop_i % 10 == 0:
             cv2.imwrite('ex1.jpg', images)
+            #np.savetxt('out2.csv', test20, delimiter=',')
+            #np.savetxt('out.csv', np_image, delimiter=',')
+            #np.savetxt('np_image.csv', np_image, delimiter=',')
 
         test20 = np.zeros((401, 640))  # 上から見たとき、深度値がどれくらい重なっているかを記録 初期値0　400mmまで記録
 
@@ -121,7 +123,7 @@ try:
         aligned_frames = align.process(frames)
 
         # Get aligned frames
-        aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
+        aligned_depth_frame = aligned_frames.get_depth_frame()  # aligned_depth_frame is a 640x480 depth image
         color_frame = aligned_frames.get_color_frame()
 
         # Validate that both frames are valid
@@ -146,27 +148,71 @@ try:
         # print("depth", meters2)  #show point distance
 
         # depthデータをCSV出力する
-        depth = frames.get_depth_frame()
+        depth = aligned_frames.get_depth_frame()
         depth_data = depth.as_frame().get_data()
         np_image = np.asanyarray(depth_data)
         # print(test20)
 
-        for i in range(10, 350):
-            for j in range(270, 370):
+        vertical_0 = 150
+        vertical_100 = 210
+        horizontal_0 = 270
+        horizontal_100 = 370  # test20 = 401*640
+
+        for i in range(vertical_0, vertical_100):
+            for j in range(horizontal_0, horizontal_100):
                 # for j in range(10, 630):
                 if np_image[i][j] <= 400 and np_image[i][j] >= 100:  # 400mmまでに茎がないかどうか
                     test20[np_image[i][j]][j] += 1
-        print(np_image[180][320])
+        vertical_0 -= 15
+        vertical_100 += 15
+
+        ## print("range ", vertical_0, vertical_100)
+        ## print(np_image[180][320])
         res1 = np.argmax(test20)
         res4 = np.amax(test20)
         res2, res3 = divmod(res1, 640)
-        print(res1, res2, res3, res4)
+        res5 = test20[res2, res3]
+        print(res1, res2, res3, res4, res5)
         # print(test20)
-        # np.savetxt('out2.csv', test20, delimiter=',')
+        test40 = np.where(np_image[:, [res3]] == res2)
+        print(test40[0][:])
+        images = color_image
+        shape = color_image
 
-        #pyplot.plot(test20)
-        #pyplot.show()
-        #np.savetxt('out.csv', np_image, delimiter=',')
+        print("##########", color_image[100][100])
+
+        if res3 != 0:
+            # hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
+            ave_BGR = np.zeros(3)
+            ave_BGR_params = np.zeros(3)
+            for res3_i in range(0, int(res4)):  # 予測した垂線
+                if np_image[test40[0][res3_i], res3+2] >= res2-1 and np_image[test40[0][res3_i], int(res4)+2] <= res2+1:
+                    ave_BGR = (color_image[test40[0][res3_i], res3+2] + color_image[test40[0][res3_i], res3+1] + color_image[test40[0][res3_i], res3+3]) / 3
+
+                elif np_image[test40[0][res3_i], res3-2] >= res2-1 and np_image[test40[0][res3_i], int(res4)-2] <= res2+1:
+                    ave_BGR = (color_image[test40[0][res3_i], res3-2] + color_image[test40[0][res3_i], res3-1] + color_image[test40[0][res3_i], res3-3]) / 3
+                for res3_j in range(0, 3):
+                    ave_BGR_params[res3_j] += ave_BGR[res3_j]
+            ave_B = ave_BGR_params[0] / int(res4)
+            ave_G = ave_BGR_params[1] / int(res4)
+            ave_R = ave_BGR_params[2] / int(res4)
+            print("hsv", ave_B, ave_G, ave_R)
+
+        '''# x_rep = [res3, res3]
+        # y_rep = [10, 350]
+        # z_rep = [res2, res2]
+        # ax = Axes3D(fig)
+        # ax.plot(x_rep, z_rep, y_rep, "o-", color="#00aa00", ms=4, mew=0.5)
+        plt.xlim(0, 640)
+        plt.ylim(0, 400)
+        plt.xlabel("x axis")
+        plt.ylabel("z axis")
+        plt.plot(res3, res2, marker='.', markersize=20)
+        plt.pause(0.5)
+        plt.clf()'''
+
+        # pyplot.plot(test20)
+        # pyplot.show()
 
         # Render images
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
@@ -175,18 +221,33 @@ try:
         kernel = np.array([[0, 0, 0],
                            [-1, 0, 1],
                            [0, 0, 0]])
-        dst1 = cv2.Canny(gray, 75, 150)
-        height = dst1.shape[0]
-        width = dst1.shape[1]
+        # dst1 = cv2.Canny(color_image, 75, 150)
+
+        ## hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
+        ## center_param = hsv[target_width][target_height]
+        ## print(center_param)
+        if res3 != 0:
+            lower_yellow = np.array([ave_B-20, ave_G-20, ave_R-20])
+            upper_yellow = np.array([ave_B+20, ave_G+20, ave_R+20])
+            img_mask = cv2.inRange(color_image, lower_yellow, upper_yellow)
+            dst1 = cv2.bitwise_and(color_image, color_image, mask=img_mask)
+            cv2.imshow('Masked', img_mask)
+
+        # height = dst1.shape[0]
+        # width = dst1.shape[1]
         # print("", width, height)
 
-        images = np.hstack((color_image, depth_colormap))
-        cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
-        cv2.circle(images, (target_width, target_height), 10, (255, 0, 0), 5)
-        cv2.imshow('Align Example', images)  # RGB+depth(Colored)
+
+        # images = depth_colormap
+        # images = np.hstack((color_image, depth_colormap))
+        # cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
+        # cv2.circle(images, (target_width, target_height), 10, (255, 0, 0), 5)
+        cv2.line(images, (res3, 0), (res3, 480), (255, 0, 0), 5)
+        cv2.imshow('color - depth', shape)
+        # cv2.imshow('color - depth2', hsv)  # RGB+depth(Colored)
         # cv2.imshow('Align Example2', np_image)  # ndarray data
-        cv2.circle(dst1, (target_width, target_height), 10, (255, 0, 0), -1)
-        # cv2.imshow('Align Example3', dst1)  # cv2.canny
+        # cv2.circle(dst1, (target_width, target_height), 10, (255, 0, 0), -1)
+
 
         # print(type(np_image))
 
@@ -197,7 +258,7 @@ try:
         plt.pause(1.5)
         print("plot")'''
 
-        mouseData = mouseParam('Align Example')
+        mouseData = mouseParam('color - depth')
 
         cv2.waitKey(20)
         #左クリックがあったら表示
@@ -205,6 +266,7 @@ try:
             print(mouseData.getPos())
             target_width = mouseData.getX()
             target_height = mouseData.getY()
+            print("mouse_point", target_width, target_height)
             # np.savetxt('out.csv', np_image, delimiter=',') # save CSV
         #右クリックがあったら終了
         elif mouseData.getEvent() == cv2.EVENT_RBUTTONDOWN:
@@ -217,7 +279,7 @@ try:
             break
         t2 = time.time()
         elapsed_time = t2-t1
-        print(f"経過時間：{elapsed_time}")
+        # print(f"経過時間：{elapsed_time}")
 finally:
 
     pipeline.stop()
