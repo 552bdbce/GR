@@ -107,8 +107,9 @@ try:
     while True:
         t1 = time.time()
         loop_i += 1
-        if loop_i % 10 == 0:
+        if loop_i % 1000000 == 0:
             cv2.imwrite('ex1.jpg', images)
+            print("saved")
             #np.savetxt('out2.csv', test20, delimiter=',')
             #np.savetxt('out.csv', np_image, delimiter=',')
             #np.savetxt('np_image.csv', np_image, delimiter=',')
@@ -220,8 +221,8 @@ try:
         ## center_param = hsv[target_width][target_height]
         ## print(center_param)
         if res3 != 0:
-            lower_yellow = np.array([ave_B-20, ave_G-20, ave_R-20])
-            upper_yellow = np.array([ave_B+20, ave_G+20, ave_R+20])
+            lower_yellow = np.array([ave_B-40, ave_G-40, ave_R-40])
+            upper_yellow = np.array([ave_B+40, ave_G+40, ave_R+40])
             img_mask = cv2.inRange(color_image, lower_yellow, upper_yellow)
             dst1 = cv2.bitwise_and(color_image, color_image, mask=img_mask)
             cv2.imshow('Masked', img_mask)
@@ -256,12 +257,14 @@ try:
         cv2.waitKey(20)
         #左クリックがあったら表示
         if mouseData.getEvent() == cv2.EVENT_LBUTTONDOWN:
-            print(mouseData.getPos())
+            #print(mouseData.getPos())
             target_width = mouseData.getX()
             target_height = mouseData.getY()
-            print("mouse_point", target_width, target_height)
+            #print("mouse_point", target_width, target_height)
             # np.savetxt('out.csv', np_image, delimiter=',') # save CSV
-            print("hsv", ave_B, ave_G, ave_R)
+            #print("hsv", ave_B, ave_G, ave_R)
+            cv2.imwrite('ex1.jpg', images)
+            print("saved")
         #右クリックがあったら終了
         elif mouseData.getEvent() == cv2.EVENT_RBUTTONDOWN:
             break;

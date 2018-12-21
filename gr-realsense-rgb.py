@@ -104,6 +104,8 @@ try:
 
     loop_i = 0
 
+    mask2 = np.zeros((480, 640))
+
     while True:
         t1 = time.time()
         loop_i += 1
@@ -112,6 +114,7 @@ try:
             #np.savetxt('out2.csv', test20, delimiter=',')
             #np.savetxt('out.csv', np_image, delimiter=',')
             #np.savetxt('np_image.csv', np_image, delimiter=',')
+            mask2 = np.zeros((480, 640))
 
         test20 = np.zeros((401, 640))  # 上から見たとき、深度値がどれくらい重なっているかを記録 初期値0　400mmまで記録
 
@@ -188,9 +191,18 @@ try:
             for res3_i in range(0, int(res4)):  # 予測した垂線
                 if np_image[test40[0][res3_i], res3+2] >= res2-1 and np_image[test40[0][res3_i], int(res4)+2] <= res2+1:
                     ave_BGR = (color_image[test40[0][res3_i], res3+2] + color_image[test40[0][res3_i], res3+1] + color_image[test40[0][res3_i], res3+3]) / 3
-
+                    print("# #")
                 elif np_image[test40[0][res3_i], res3-2] >= res2-1 and np_image[test40[0][res3_i], int(res4)-2] <= res2+1:
                     ave_BGR = (color_image[test40[0][res3_i], res3-2] + color_image[test40[0][res3_i], res3-1] + color_image[test40[0][res3_i], res3-3]) / 3
+                    print("# #")
+                elif np_image[test40[0][res3_i], res3-1] >= res2-1 and np_image[test40[0][res3_i], int(res4)-1] <= res2+1:
+                    ave_BGR = color_image[test40[0][res3_i], res3-1]
+                    print("# #")
+                elif np_image[test40[0][res3_i], res3-2] >= res2+1 and np_image[test40[0][res3_i], int(res4)+1] <= res2+1:
+                    ave_BGR = color_image[test40[0][res3_i], res3+1]
+                    print("# #")
+                else:
+                    ave_BGR = color_image[test40[0][res3_i], res3]
                 for res3_j in range(0, 3):
                     ave_BGR_params[res3_j] += ave_BGR[res3_j]
             ave_B = ave_BGR_params[0] / int(res4)
@@ -227,11 +239,12 @@ try:
         ## center_param = hsv[target_width][target_height]
         ## print(center_param)
         if res3 != 0:
-            lower_yellow = np.array([ave_B-20, ave_G-20, ave_R-20])
-            upper_yellow = np.array([ave_B+20, ave_G+20, ave_R+20])
+            lower_yellow = np.array([ave_B-40, ave_G-40, ave_R-40])
+            upper_yellow = np.array([ave_B+10, ave_G+10, ave_R+10])
             img_mask = cv2.inRange(color_image, lower_yellow, upper_yellow)
             dst1 = cv2.bitwise_and(color_image, color_image, mask=img_mask)
-            cv2.imshow('Masked', img_mask)
+            mask2 += img_mask
+            cv2.imshow('Masked', mask2)
 
         # height = dst1.shape[0]
         # width = dst1.shape[1]
@@ -243,7 +256,7 @@ try:
         # cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
         # cv2.circle(images, (target_width, target_height), 10, (255, 0, 0), 5)
         cv2.line(images, (res3, 0), (res3, 480), (255, 0, 0), 5)
-        cv2.imshow('color - depth', shape)
+        cv2.imshow('color - depth', color_image)
         # cv2.imshow('color - depth2', hsv)  # RGB+depth(Colored)
         # cv2.imshow('Align Example2', np_image)  # ndarray data
         # cv2.circle(dst1, (target_width, target_height), 10, (255, 0, 0), -1)

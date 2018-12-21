@@ -12,6 +12,7 @@ import numpy as np
 # Import OpenCV for easy image rendering
 import cv2
 import time
+from plantcv import plantcv as pcv
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -133,7 +134,8 @@ try:
 
         # depth_image = np.asanyarray(aligned_depth_frame.get_data())
         color_image = cv2.imread('snapshot.png')
-
+        mask = pcv.naive_bayes_classifier(color_image, "naive_bayes_pdfs.txt")
+        cv2.imshow('Align Example3', mask)
         # Remove background - Set pixels further than clipping_distance to grey
         grey_color = 153
         # depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
@@ -202,7 +204,7 @@ try:
         kernel = np.array([[0, 0, 0],
                            [-1, 0, 1],
                            [0, 0, 0]])
-        dst1 = cv2.Canny(color_image, 130, 180)
+        # dst1 = cv2.Canny(color_image, 130, 180)
         hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
         center_param = hsv[100][100]
         print(center_param[2])
@@ -211,8 +213,8 @@ try:
         img_mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
         img_color = cv2.bitwise_and(color_image, color_image, mask=img_mask)
         cv2.imshow('Align Example4', img_color)
-        height = dst1.shape[0]
-        width = dst1.shape[1]
+        # height = dst1.shape[0]
+        # width = dst1.shape[1]
         # print("", width, height)
 
         #images = depth_colormap
@@ -222,8 +224,8 @@ try:
         #cv2.line(images, (res3, 0), (res3, 360), (255, 0, 0), 5)
         #cv2.imshow('Align Example', images)  # RGB+depth(Colored)
         # cv2.imshow('Align Example2', np_image)  # ndarray data
-        cv2.circle(dst1, (target_width, target_height), 10, (255, 0, 0), -1)
-        cv2.imshow('Align Example3', dst1)  # cv2.canny
+        #cv2.circle(dst1, (target_width, target_height), 10, (255, 0, 0), -1)
+        #cv2.imshow('Align Example3', dst1)  # cv2.canny
 
         # print(type(np_image))
 
@@ -257,5 +259,5 @@ try:
         print(f"経過時間：{elapsed_time}")
 finally:
 
-    pipeline.stop()
+    print(" ")
 

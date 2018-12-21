@@ -13,6 +13,7 @@ import numpy as np
 import cv2
 import time
 from plantcv import plantcv as pcv
+import csv
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -109,7 +110,7 @@ try:
         t1 = time.time()
         loop_i += 1
         if loop_i % 10 == 0:
-            cv2.imwrite('ex1.jpg', hsv)
+            cv2.imwrite('ex1.jpg', mask["plant"])
             #np.savetxt('out2.csv', test20, delimiter=',')
             #np.savetxt('out.csv', np_image, delimiter=',')
             #np.savetxt('np_image.csv', np_image, delimiter=',')
@@ -133,6 +134,29 @@ try:
 
         depth_image = np.asanyarray(aligned_depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
+
+        s = pcv.rgb2gray_hsv(color_image, 's')  # plantcv
+        s_thresh = pcv.threshold.binary(s, 85, 255, 'light')  # plantcv
+        s_mblur = pcv.median_blur(s_thresh, 5)
+        s_cnt = pcv.median_blur(s_thresh, 5)
+        # cv2.imshow('color - depth3', s_mblur)
+        # Convert RGB to LAB and extract the Blue channel
+        b = pcv.rgb2gray_lab(color_image, 'b')
+
+        # Threshold the blue image
+        b_thresh = pcv.threshold.binary(b, 160, 255, 'light')
+        b_cnt = pcv.threshold.binary(b, 160, 255, 'light')
+
+        # Fill small objects
+        # b_fill = pcv.fill(b_thresh, 10)
+        mask = pcv.naive_bayes_classifier(color_image, "naive_bayes_pdfs.txt")
+        cv2.imshow('color - depthmask', mask["plant"])
+        #w = csv.writer(open("output.csv", "w"))
+        #for key, val in mask.items():
+                #w.writerow([key, val])
+
+
+
 
         # Remove background - Set pixels further than clipping_distance to grey
         grey_color = 153
@@ -160,10 +184,10 @@ try:
         horizontal_100 = 370  # test20 = 401*640
 
         for i in range(vertical_0, vertical_100):
-               for j in range(horizontal_0, horizontal_100):
-               # for j in range(10, 630):
-                   if np_image[i][j] <= 400 and np_image[i][j] >= 100:  # 400mmまでに茎がないかどうか
-                       test20[np_image[i][j]][j] += 1
+            for j in range(horizontal_0, horizontal_100):
+                # for j in range(10, 630):
+                if np_image[i][j] <= 400 and np_image[i][j] >= 100:  # 400mmまでに茎がないかどうか
+                    test20[np_image[i][j]][j] += 1
         vertical_0 -= 15
         vertical_100 += 15
 
@@ -230,7 +254,7 @@ try:
             upper_yellow = np.array([ave_h+80, ave_s+10, ave_v])
             img_mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
             dst1 = cv2.bitwise_and(hsv, hsv, mask=img_mask)
-            cv2.imshow('Masked', dst1)
+            # cv2.imshow('Masked', dst1)
 
         # height = dst1.shape[0]
         # width = dst1.shape[1]
@@ -242,8 +266,8 @@ try:
         # cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
         # cv2.circle(images, (target_width, target_height), 10, (255, 0, 0), 5)
         cv2.line(images, (res3, 0), (res3, 480), (255, 0, 0), 5)
-        cv2.imshow('color - depth', images)
-        #cv2.imshow('color - depth2', mask)  # RGB+depth(Colored)
+        # cv2.imshow('color - depth', images)
+        # cv2.imshow('color - depth2', hsv)  # RGB+depth(Colored)
         # cv2.imshow('Align Example2', np_image)  # ndarray data
         # cv2.circle(dst1, (target_width, target_height), 10, (255, 0, 0), -1)
 
