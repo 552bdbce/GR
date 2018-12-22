@@ -13,7 +13,10 @@ import numpy as np
 import cv2
 import time
 from plantcv import plantcv as pcv
+import functions
 import csv
+import os
+import math
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -150,7 +153,15 @@ try:
         # Fill small objects
         # b_fill = pcv.fill(b_thresh, 10)
         mask = pcv.naive_bayes_classifier(color_image, "naive_bayes_pdfs.txt")
+        #histogram_low = np.sum(mask["plant"][int(360/2):, :], axis=0)
+        #histogram_up = np.sum(mask["plant"][:int(360/2), :], axis=0)
+        histogram = np.sum(mask["plant"][int(360/2):, :], axis=0)
+        win_left_x = np.argmax(histogram)
+        functions.sliding_windows(mask["plant"], win_left_x)
+        # cv2.circle(mask["plant"], (np.argmax(histogram_low), 400), 30, (255, 0, 0), -1)
+        # cv2.circle(mask["plant"], (np.argmax(histogram_up), 200), 30, (255, 0, 0), -1)
         cv2.imshow('color - depthmask', mask["plant"])
+        # np.savetxt('histogram.csv', histogram,delimiter=',')
         #w = csv.writer(open("output.csv", "w"))
         #for key, val in mask.items():
                 #w.writerow([key, val])
@@ -197,10 +208,10 @@ try:
         res4 = np.amax(test20)
         res2, res3 = divmod(res1, 640)
         res5 = test20[res2, res3]
-        print(res1, res2, res3, res4, res5)
+        # print(res1, res2, res3, res4, res5)
         # print(test20)
         test40 = np.where(np_image[:, [res3]] == res2)
-        print(test40[0][:])
+        # print(test40[0][:])
         images = color_image
 
         if res3 != 0:
@@ -219,7 +230,7 @@ try:
             ave_h = ave_hsv_params[0] / int(res4)
             ave_s = ave_hsv_params[1] / int(res4)
             ave_v = ave_hsv_params[2] / int(res4)
-            print("hsv", ave_h, ave_s, ave_v)
+            # print("hsv", ave_h, ave_s, ave_v)
 
         '''# x_rep = [res3, res3]
         # y_rep = [10, 350]
@@ -241,9 +252,9 @@ try:
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
         gray = cv2.cvtColor(depth_colormap, cv2.COLOR_RGB2GRAY)
-        kernel = np.array([[0, 0, 0],
-                           [-1, 0, 1],
-                           [0, 0, 0]])
+        # kernel = np.array([[0, 0, 0],
+                           # [-1, 0, 1],
+                           # [0, 0, 0]])
         # dst1 = cv2.Canny(color_image, 75, 150)
 
         hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
