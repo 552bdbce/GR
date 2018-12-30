@@ -110,10 +110,15 @@ try:
     loop_i = 0
 
     while True:
+        time.sleep(0.7)
         t1 = time.time()
         loop_i += 1
         if loop_i % 10 == 0:
             cv2.imwrite('ex1.jpg', mask["plant"])
+            cv2.imwrite('color_image.jpg', color_image)
+            np.savetxt('xyz_all.csv', repre_xyz_all, delimiter=',')  # save CSV
+            np.savetxt('xyz.csv', repre_xyz, delimiter=',')  # save CSV
+            print("save")
             #np.savetxt('out2.csv', test20, delimiter=',')
             #np.savetxt('out.csv', np_image, delimiter=',')
             #np.savetxt('np_image.csv', np_image, delimiter=',')
@@ -157,7 +162,7 @@ try:
         #histogram_up = np.sum(mask["plant"][:int(360/2), :], axis=0)
         histogram = np.sum(mask["plant"][int(360/2):, :], axis=0)
         win_left_x = np.argmax(histogram)
-        functions.sliding_windows(mask["plant"], win_left_x)
+        branch_x, branch_y, left_dot_x, left_dot_y = functions.sliding_windows(mask["plant"], win_left_x)
         # cv2.circle(mask["plant"], (np.argmax(histogram_low), 400), 30, (255, 0, 0), -1)
         # cv2.circle(mask["plant"], (np.argmax(histogram_up), 200), 30, (255, 0, 0), -1)
         cv2.imshow('color - depthmask', mask["plant"])
@@ -187,7 +192,6 @@ try:
         depth = aligned_frames.get_depth_frame()
         depth_data = depth.as_frame().get_data()
         np_image = np.asanyarray(depth_data)
-        # print(test20)
 
         vertical_0 = 150
         vertical_100 = 210
@@ -201,6 +205,45 @@ try:
                     test20[np_image[i][j]][j] += 1
         vertical_0 -= 15
         vertical_100 += 15
+
+        branch_x_array = np.array(branch_x)
+        branch_y_array = np.array(branch_y)
+        left_dot_x_array = np.array(left_dot_x)
+        left_dot_y_array = np.array(left_dot_y)
+        v_vertex_x = np.zeros(len(branch_x))
+        v_vertex_y = np.zeros(len(branch_y))
+        v_vertex_z = np.zeros(len(branch_x))
+        v_vertex_x_all = np.zeros(len(left_dot_x))
+        v_vertex_y_all = np.zeros(len(left_dot_x))
+        v_vertex_z_all = np.zeros(len(left_dot_x))
+        # 3d位置を計算
+
+        if len(branch_x) != 0:
+            for points_i in range(len(branch_x)):
+                    depth_for_rep_zero = (np_image[branch_y_array[points_i]][branch_x_array[points_i]+1],
+                                        np_image[branch_y_array[points_i]][branch_x_array[points_i]+2],
+                                        np_image[branch_y_array[points_i]][branch_x_array[points_i]-1],
+                                        np_image[branch_y_array[points_i]][branch_x_array[points_i]-2],)
+                    depth_for_rep = min([e for e in depth_for_rep_zero if depth_for_rep_zero != 0])
+                    v_vertex_x[points_i] = branch_x_array[points_i] * depth_for_rep / 3.48
+                    v_vertex_y[points_i] = branch_y_array[points_i] * depth_for_rep / 3.48
+                    v_vertex_z[points_i] = depth_for_rep
+        if len(left_dot_x) != 0:
+            for points_i in range(len(left_dot_x)):
+                depth_for_rep_zero = (np_image[left_dot_y_array[points_i]][left_dot_x_array[points_i]+1],
+                                      np_image[left_dot_y_array[points_i]][left_dot_x_array[points_i]+2],
+                                      np_image[left_dot_y_array[points_i]][left_dot_x_array[points_i]-1],
+                                      np_image[left_dot_y_array[points_i]][left_dot_x_array[points_i]-2],)
+                depth_for_rep = min([e for e in depth_for_rep_zero if depth_for_rep_zero != 0])
+                v_vertex_x_all[points_i] = left_dot_x_array[points_i] * depth_for_rep / 3.48
+                v_vertex_y_all[points_i] = left_dot_y_array[points_i] * depth_for_rep / 3.48
+                v_vertex_z_all[points_i] = depth_for_rep
+
+        repre_xyz = np.hstack((v_vertex_x, v_vertex_y, v_vertex_z, len(v_vertex_z)))
+        repre_xyz_all = np.hstack((v_vertex_x_all, v_vertex_y_all, v_vertex_z_all, len(v_vertex_z_all)))
+        # print(len(v_vertex_z))
+
+        # np.savetxt('xyzaa.csv', np_image, delimiter=',')  # save CSV
 
         ## print("range ", vertical_0, vertical_100)
         ## print(np_image[180][320])
@@ -276,7 +319,7 @@ try:
         # images = np.hstack((color_image, depth_colormap))
         # cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)
         # cv2.circle(images, (target_width, target_height), 10, (255, 0, 0), 5)
-        cv2.line(images, (res3, 0), (res3, 480), (255, 0, 0), 5)
+        # cv2.line(images, (res3, 0), (res3, 480), (255, 0, 0), 5)
         # cv2.imshow('color - depth', images)
         # cv2.imshow('color - depth2', hsv)  # RGB+depth(Colored)
         # cv2.imshow('Align Example2', np_image)  # ndarray data
