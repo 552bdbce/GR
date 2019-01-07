@@ -64,6 +64,17 @@ class mouseParam:
     def getPos(self):
         return (self.mouseEvent["x"], self.mouseEvent["y"])
 
+def Map2Dto3D(intr, map_x, map_y, map_depth):
+    x_x = (map_x - intr.ppx) / intr.fx
+    y_y = (map_y - intr.ppy) / intr.fy
+    r2 = x_x * x_x + y_y * y_y
+    f = 1 + intr.coeffs[0] * r2 + intr.coeffs[1] * r2 * r2 + intr.coeffs[4] * r2 * r2 * r2
+    ux = x_x * f + 2 * intr.coeffs[2] * x_x * y_y + intr.coeffs[3] * (r2 + 2 * x_x * x_x)
+    uy = y_y * f + 2 * intr.coeffs[3] * x_x * y_y + intr.coeffs[2] * (r2 + 2 * y_y * y_y)
+    x_x = map_depth * ux
+    y_y = map_depth * uy
+    return x_x, y_y
+
 # Create a pipeline
 pipeline = rs.pipeline()
 
@@ -72,9 +83,13 @@ pipeline = rs.pipeline()
 config = rs.config()
 config.enable_stream(rs.stream.depth, 640, 360, rs.format.z16, 30)  # ->360
 config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+# config.enable_stream(rs.stream.infrared, 1)
 
 # Start streaming
 profile = pipeline.start(config)
+profile2 = profile.get_stream(rs.stream.depth)
+intrinsics = profile2.as_video_stream_profile().get_intrinsics()
+print(intrinsics)
 
 # Getting the depth sensor's depth scale (see rs-align example for explanation)
 depth_sensor = profile.get_device().first_depth_sensor()
@@ -115,9 +130,12 @@ try:
         loop_i += 1
         if loop_i % 10 == 0:
             cv2.imwrite('ex1.jpg', mask["plant"])
-            cv2.imwrite('color_image.jpg', color_image)
+            # cv2.imwrite('color_image.jpg', color_image)
             np.savetxt('xyz_all.csv', repre_xyz_all, delimiter=',')  # save CSV
-            np.savetxt('xyz.csv', repre_xyz, delimiter=',')  # save CSV
+            # np.savetxt('xyz.csv', repre_xyz, delimiter=',')  # save CSV
+            # cv2.imwrite('bf_aligned.jpg', depth_color_image)
+            # cv2.imwrite('aligned.jpg', aligned_depth_color_image)
+            # np.savetxt('histogram.csv', histogram, delimiter=',')
             print("save")
             #np.savetxt('out2.csv', test20, delimiter=',')
             #np.savetxt('out.csv', np_image, delimiter=',')
@@ -132,9 +150,21 @@ try:
         # Align the depth frame to color frame
         aligned_frames = align.process(frames)
 
+        # depth_frame = frames.get_depth_frame()
+        # depth_color_frame = rs.colorizer().colorize(depth_frame)
+        # depth_color_image = np.asanyarray(depth_color_frame.get_data())
+        # cv2.imshow('bf - aligned', depth_color_image)
+
         # Get aligned frames
         aligned_depth_frame = aligned_frames.get_depth_frame()  # aligned_depth_frame is a 640x480 depth image
         color_frame = aligned_frames.get_color_frame()
+
+        # ir_ir = frames.get_infrared()
+        # cv2.imshow('aligned', ir_ir)
+
+        # aligned_depth_color_frame = rs.colorizer().colorize(aligned_depth_frame)
+        # aligned_depth_color_image = np.asanyarray(aligned_depth_color_frame.get_data())
+        # cv2.imshow('aligned', aligned_depth_color_image)
 
         # Validate that both frames are valid
         if not aligned_depth_frame or not color_frame:
@@ -162,7 +192,11 @@ try:
         #histogram_up = np.sum(mask["plant"][:int(360/2), :], axis=0)
         histogram = np.sum(mask["plant"][int(360/2):, :], axis=0)
         win_left_x = np.argmax(histogram)
+
+        # ################################################################################################
         branch_x, branch_y, left_dot_x, left_dot_y = functions.sliding_windows(mask["plant"], win_left_x)
+        # ################################################################################################
+
         # cv2.circle(mask["plant"], (np.argmax(histogram_low), 400), 30, (255, 0, 0), -1)
         # cv2.circle(mask["plant"], (np.argmax(histogram_up), 200), 30, (255, 0, 0), -1)
         cv2.imshow('color - depthmask', mask["plant"])
@@ -216,27 +250,28 @@ try:
         v_vertex_x_all = np.zeros(len(left_dot_x))
         v_vertex_y_all = np.zeros(len(left_dot_x))
         v_vertex_z_all = np.zeros(len(left_dot_x))
-        # 3d位置を計算
 
+        # 3d位置を計算
         if len(branch_x) != 0:
             for points_i in range(len(branch_x)):
-                    depth_for_rep_zero = (np_image[branch_y_array[points_i]][branch_x_array[points_i]+1],
-                                        np_image[branch_y_array[points_i]][branch_x_array[points_i]+2],
-                                        np_image[branch_y_array[points_i]][branch_x_array[points_i]-1],
-                                        np_image[branch_y_array[points_i]][branch_x_array[points_i]-2],)
-                    depth_for_rep = min([e for e in depth_for_rep_zero if depth_for_rep_zero != 0])
-                    v_vertex_x[points_i] = branch_x_array[points_i] * depth_for_rep / 3.48
-                    v_vertex_y[points_i] = branch_y_array[points_i] * depth_for_rep / 3.48
-                    v_vertex_z[points_i] = depth_for_rep
+                depth_for_rep_zero = (np_image[branch_y_array[points_i]][branch_x_array[points_i]+1],
+                                      np_image[branch_y_array[points_i]][branch_x_array[points_i]+2],
+                                      np_image[branch_y_array[points_i]][branch_x_array[points_i]-1],
+                                      np_image[branch_y_array[points_i]][branch_x_array[points_i]-2],)
+                depth_for_rep = min([e for e in depth_for_rep_zero if depth_for_rep_zero != 0])
+                v_vertex_x[points_i] = branch_x_array[points_i] * depth_for_rep / 4.621
+                v_vertex_y[points_i] = branch_y_array[points_i] * depth_for_rep / 4.629
+                v_vertex_z[points_i] = depth_for_rep*100
         if len(left_dot_x) != 0:
             for points_i in range(len(left_dot_x)):
                 depth_for_rep_zero = (np_image[left_dot_y_array[points_i]][left_dot_x_array[points_i]+1],
                                       np_image[left_dot_y_array[points_i]][left_dot_x_array[points_i]+2],
                                       np_image[left_dot_y_array[points_i]][left_dot_x_array[points_i]-1],
                                       np_image[left_dot_y_array[points_i]][left_dot_x_array[points_i]-2],)
-                depth_for_rep = min([e for e in depth_for_rep_zero if depth_for_rep_zero != 0])
-                v_vertex_x_all[points_i] = left_dot_x_array[points_i] * depth_for_rep / 3.48
-                v_vertex_y_all[points_i] = left_dot_y_array[points_i] * depth_for_rep / 3.48
+                depth_for_rep = min([e for e in depth_for_rep_zero if depth_for_rep_zero != 0]) / 100
+                # v_vertex_x_all[points_i] = left_dot_x_array[points_i] * depth_for_rep / 6.172 # old
+                v_vertex_x_all[points_i], v_vertex_y_all[points_i] = Map2Dto3D(intrinsics, left_dot_x_array[points_i], left_dot_y_array[points_i], depth_for_rep)
+                # v_vertex_y_all[points_i] = left_dot_y_array[points_i] * depth_for_rep / 4.629 # old
                 v_vertex_z_all[points_i] = depth_for_rep
 
         repre_xyz = np.hstack((v_vertex_x, v_vertex_y, v_vertex_z, len(v_vertex_z)))
