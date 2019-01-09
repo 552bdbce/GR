@@ -128,15 +128,18 @@ try:
         time.sleep(0.7)
         t1 = time.time()
         loop_i += 1
-        if loop_i % 10 == 0:
-            cv2.imwrite('ex1.jpg', mask["plant"])
-            # cv2.imwrite('color_image.jpg', color_image)
-            np.savetxt('xyz_all.csv', repre_xyz_all, delimiter=',')  # save CSV
-            # np.savetxt('xyz.csv', repre_xyz, delimiter=',')  # save CSV
+        if loop_i % 2 == 0:
+            if len(branch_x) == 6:
+                cv2.imwrite('ex1.jpg', mask["plant"])
+                cv2.imwrite('ex2.jpg', cv_rgb_sliding_windows)
+                cv2.imwrite('color_image.jpg', color_image)
+                np.savetxt('xyz_all.csv', repre_xyz_all, delimiter=',')  # save CSV
+                np.savetxt('xyz.csv', repre_xyz, delimiter=',')  # save CSV
+                print(len(branch_x))
             # cv2.imwrite('bf_aligned.jpg', depth_color_image)
             # cv2.imwrite('aligned.jpg', aligned_depth_color_image)
             # np.savetxt('histogram.csv', histogram, delimiter=',')
-            print("save")
+                print("save")
             #np.savetxt('out2.csv', test20, delimiter=',')
             #np.savetxt('out.csv', np_image, delimiter=',')
             #np.savetxt('np_image.csv', np_image, delimiter=',')
@@ -194,7 +197,7 @@ try:
         win_left_x = np.argmax(histogram)
 
         # ################################################################################################
-        branch_x, branch_y, left_dot_x, left_dot_y = functions.sliding_windows(mask["plant"], win_left_x)
+        branch_x, branch_y, left_dot_x, left_dot_y, cv_rgb_sliding_windows = functions.sliding_windows(mask["plant"], win_left_x)
         # ################################################################################################
 
         # cv2.circle(mask["plant"], (np.argmax(histogram_low), 400), 30, (255, 0, 0), -1)
@@ -258,10 +261,13 @@ try:
                                       np_image[branch_y_array[points_i]][branch_x_array[points_i]+2],
                                       np_image[branch_y_array[points_i]][branch_x_array[points_i]-1],
                                       np_image[branch_y_array[points_i]][branch_x_array[points_i]-2],)
-                depth_for_rep = min([e for e in depth_for_rep_zero if depth_for_rep_zero != 0])
-                v_vertex_x[points_i] = branch_x_array[points_i] * depth_for_rep / 4.621
-                v_vertex_y[points_i] = branch_y_array[points_i] * depth_for_rep / 4.629
-                v_vertex_z[points_i] = depth_for_rep*100
+                depth_for_rep = min([e for e in depth_for_rep_zero if depth_for_rep_zero != 0]) / 100
+                # v_vertex_x[points_i] = branch_x_array[points_i] * depth_for_rep / 4.621
+                v_vertex_x[points_i], v_vertex_y[points_i] = Map2Dto3D(intrinsics, branch_x_array[points_i], branch_y_array[points_i], depth_for_rep)
+                print(branch_x_array[points_i], branch_y_array[points_i], depth_for_rep)
+                print("to", v_vertex_x[points_i], v_vertex_y[points_i], depth_for_rep)
+                # v_vertex_y[points_i] = branch_y_array[points_i] * depth_for_rep / 4.629
+                v_vertex_z[points_i] = depth_for_rep
         if len(left_dot_x) != 0:
             for points_i in range(len(left_dot_x)):
                 depth_for_rep_zero = (np_image[left_dot_y_array[points_i]][left_dot_x_array[points_i]+1],

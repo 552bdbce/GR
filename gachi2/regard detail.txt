@@ -1,0 +1,20 @@
+gachi2 reconstruction detail 2019/1/9/12:xx
+picture set : 25 pics
+
+Match
+keypoint sensitivity : Ultra 0.0001
+keypoint matching ratio : Ultra 0.9
+keypoint per image(min,max,avg,median) : 31022/50717/36838/36657
+Elapsed time 3:39.821
+キャプチャ.png #Matches 14953
+
+Triangulation
+Number of 3D points : 73507
+Elapsed time 1:11.359
+
+Create dense pointcloud
+Running time 2:18.380
+
+
+
+
